@@ -1,0 +1,41 @@
+name: CI/CD Pipeline - BankSystem
+
+# Kích hoạt workflow khi có sự kiện push hoặc pull request lên nhánh main/master
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest # Chạy trên môi trường máy ảo Ubuntu mới nhất
+
+    steps:
+      # Bước 1: Kéo mã nguồn từ GitHub repository về máy ảo runner
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      # Bước 2: Cài đặt môi trường Java (Sử dụng JDK 25 giống thiết lập trên máy bạn)
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'oracle' # Hoặc 'temurin'
+          cache: 'maven' # Tự động cache thư viện Maven để tăng tốc độ build các lần sau
+
+      # Bước 3: Chạy vòng đời build của Maven (clean, test, package)
+      # Cờ -B (batch mode) giúp logs gọn gàng hơn trên môi trường CI
+      - name: Build and Test with Maven
+        run: mvn -B clean package
+
+      # Bước 4: Lưu giữ tệp .jar được tạo ra sau khi build thành công
+      - name: Upload JAR Artifact
+        # Bước này chỉ chạy nếu bước Build thành công
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: BankSystem-Artifact
+          # Đường dẫn tìm tệp .jar vừa được Maven tạo ra trong thư mục target/
+          path: target/*.jar
+          retention-days: 7 # Thời gian lưu trữ file trên GitHub là 7 ngày
